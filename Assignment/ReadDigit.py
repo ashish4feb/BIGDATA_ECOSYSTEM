@@ -152,4 +152,32 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction, 'float'))
 #return index of max probablity
 predict = tf.argmax(y,1)
 
+epochs_completed = 0
+index_in_epoch = 0
+num_examples = train_images.shape[0]
 
+def get_next_batch(batch_size):
+    
+    global train_images
+    global train_labels
+    global index_in_epoch
+    global epochs_completed
+    
+    start = index_in_epoch
+    index_in_epoch += batch_size
+    
+    # when all trainig data have been already used, it is reorder randomly    
+    if index_in_epoch > num_examples:
+        # finished epoch
+        epochs_completed += 1
+        # shuffle the data
+        perm = np.arange(num_examples)
+        np.random.shuffle(perm)
+        train_images = train_images[perm]
+        train_labels = train_labels[perm]
+        # start next epoch
+        start = 0
+        index_in_epoch = batch_size
+        assert batch_size <= num_examples
+    end = index_in_epoch
+    return train_images[start:end], train_labels[start:end]
