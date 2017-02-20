@@ -1,20 +1,22 @@
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+import sys
 
 #Model Sttings
 Learning_Rate = 1e-4
 #Can be modified to update result
 Training_Iter = 10000
 
-Drop_Outs = 0.5
-Batch_Size = 50
+#tested on 0.5 also
+Drop_Outs = 0.50
+Batch_Size = 150
 
-#Will reduce after validating other settings
-Validation_Size = 0
+#Will be 0 after validating other settings
+Validation_Size = 1000
 
 #Read data from csv file
-train_file = "train.csv"
+train_file = "f.csv"
 test_file = "test.csv"
 train_data = pd.read_csv(train_file)
 
@@ -53,7 +55,6 @@ validation_labels = labels[:Validation_Size]
 train_images = images[Validation_Size:]
 train_labels = labels[Validation_Size:]
 
-#--------------
 #Setting up TensorFlow
 
 #can be experimented with but do not set to 0
@@ -91,38 +92,28 @@ h_conv1 = tf.nn.relu(conv2d(image, W_conv1) + b_conv1)
 h_pool1 = max_pool_2x2(h_conv1)
 
 
-# Prepare for visualization
-# display 32 fetures in 4 by 8 grid
-layer1 = tf.reshape(h_conv1, (-1, image_height, image_width, 4 ,8))  
-
-# reorder so the channels are in the first dimension, x and y follow.
-layer1 = tf.transpose(layer1, (0, 3, 1, 4, 2))
-layer1 = tf.reshape(layer1, (-1, image_height*4, image_width*8)) 
 
 # second convolutional layer
 W_conv2 = weight_variable([5, 5, 32, 64])
 b_conv2 = bias_variable([64])
 
 h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
-
 h_pool2 = max_pool_2x2(h_conv2)
 
-# Prepare for visualization
-# display 64 fetures in 4 by 16 grid
-layer2 = tf.reshape(h_conv2, (-1, 14, 14, 4 ,16))
+# second convolutional layer
+W_conv3 = weight_variable([1,1,64,64])
+b_conv3 = bias_variable([64])
 
-# reorder so the channels are in the first dimension, x and y follow.
-layer2 = tf.transpose(layer2, (0, 3, 1, 4,2))
-layer2 = tf.reshape(layer2, (-1, 14*4, 14*16)) 
-
+h_conv3 = tf.nn.relu(conv2d(h_pool2, W_conv3) + b_conv3)
+#h_pool3 = max_pool_2x2(h_conv3)
 
 # densely connected layer
 W_fc1 = weight_variable([7 * 7 * 64, 1024])
 b_fc1 = bias_variable([1024])
 
-h_pool2_flat = tf.reshape(h_pool2, [-1, 7*7*64])
+h_pool3_flat = tf.reshape(h_conv3, [-1, 7*7*64])
 
-h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
+h_fc1 = tf.nn.relu(tf.matmul(h_pool3_flat, W_fc1) + b_fc1)
 
 # dropout
 keep_prob = tf.placeholder('float')
@@ -149,7 +140,6 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction, 'float'))
 
 # prediction function
 #[0.1, 0.9, 0.2, 0.1, 0.1 0.3, 0.5, 0.1, 0.2, 0.3] => 1
-#return index of max probablity
 predict = tf.argmax(y,1)
 
 epochs_completed = 0
@@ -181,3 +171,113 @@ def get_next_batch(batch_size):
         assert batch_size <= num_examples
     end = index_in_epoch
     return train_images[start:end], train_labels[start:end]
+
+# start TensorFlow session
+
+init = tf.initialize_all_variables()
+sess = tf.InteractiveSession()
+
+saver = tf.train.Saver()
+
+#saver = tf.train.import_meta_graph("save.ckpt"+'.meta');
+#saver.restore(sess, "save.ckpt")
+motive=input('Is this a training session ?')
+if motive=='yes' or motive=='YES':
+    load=input('Load previous model ?');
+    if load=='yes' or load=='YES':
+        Model=input("Name of the model");
+        try:
+            saver = tf.train.import_meta_graph(Model+'.meta');
+            saver.restore(sess, Model)
+        except :
+            print('Error : File Does not exist!!')
+    else:
+        sess.run(init)
+        Model=input("Name of new model to save :");
+
+    # visualisation variables
+    train_accuracies = []
+    validation_accuracies = []
+    x_range = []
+
+    display_timer = 1
+
+    for i in range(Training_Iter):
+
+        #get new batch
+        batch_xs, batch_ys = get_next_batch(Batch_Size)        
+
+        # check progress on every 1st,2nd,...,10th,20th,...,100th... step
+        if i%display_timer == 0 or (i+1) == Training_Iter:
+            train_accuracy = accuracy.eval(feed_dict={x:batch_xs, 
+                                              y_: batch_ys, 
+                                              keep_prob: 1.0})       
+            if(Validation_Size):
+                validation_accuracy = accuracy.eval(feed_dict={ x: validation_images[0:Batch_Size], y_: validation_labels[0:Batch_Size], keep_prob: 1.0})                                 
+                print('training_accuracy / validation_accuracy => %.2f / %.2f for step %d'%(train_accuracy, validation_accuracy, i))
+                validation_accuracies.append(validation_accuracy)
+            else:
+                print('training_accuracy => %.4f for step %d'%(train_accuracy, i))
+
+            train_accuracies.append(train_accuracy)
+            x_range.append(i)
+
+            # increase display_step
+            if i%(display_timer*10) == 0 and i:
+                display_timer *= 10
+        # train on batch
+        sess.run(train_step, feed_dict={x: batch_xs, y_: batch_ys, keep_prob: Drop_Outs})
+
+
+    if(Validation_Size):
+        validation_accuracy = accuracy.eval(feed_dict={x: validation_images, y_: validation_labels, keep_prob: 1.0})
+        print('validation_accuracy => %.4f'%validation_accuracy)
+        
+        
+    line1=plt.plot(train_accuracies,label='Training Value')
+    line2=plt.plot(validation_accuracies,label='Validation Value')
+    plt.legend(loc=4)
+    plt.ylabel('Accuracies->');
+    plt.xlabel('Iterations(x100)->');
+    plt.show()
+    
+    
+    if load=='Yes' or load=='yes':
+        save_same=input("Would you like to save this ?");
+        if(save_same=='no'):
+            temp=input("Enter Another File Name :");
+            saver.save(sess,temp);
+        else:
+            saver.save(sess,Model);
+    else:
+        saver.save(sess, Model);
+else:
+    Model=input("Name of the model");
+    try:
+        saver = tf.train.import_meta_graph(Model+'.meta');
+        saver.restore(sess, Model)
+    except :
+        print('Error : File Does not exist!!')
+        sys.exit()
+    #Testing data used for prediction now
+    test_data = pd.read_csv(test_file)
+    test_data = test_data.astype(np.float)
+    # convert from [0:255] => [0.0:1.0]
+    test_data = np.multiply(test_data, 1.0/255.0)
+
+    # predict test set
+    predicted_lables = np.zeros(test_data.shape[0])
+    for i in range(0,test_data.shape[0]//Batch_Size):
+        predicted_lables[i*Batch_Size : (i+1)*Batch_Size] = predict.eval(feed_dict={x: test_data[i*Batch_Size : (i+1)*Batch_Size], 
+                                                                                keep_prob: 1.0})
+
+    # save results
+    np.savetxt('submission_softmax.csv', 
+           np.c_[range(1,len(test_data)+1),predicted_lables], 
+           delimiter=',', 
+           header = 'ImageId,Label', 
+           comments = '', 
+           fmt='%d')
+
+#TensorFlow session closed
+sess.close()
