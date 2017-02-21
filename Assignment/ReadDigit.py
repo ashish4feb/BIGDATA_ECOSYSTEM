@@ -2,21 +2,22 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 import sys
+import matplotlib.pyplot as plt
 
-#Model Sttings
+#Model Settings
 Learning_Rate = 1e-4
 #Can be modified to update result
-Training_Iter = 10000
+Training_Iter = 4000
 
 #tested on 0.5 also
 Drop_Outs = 0.50
-Batch_Size = 150
+Batch_Size = 100
 
 #Will be 0 after validating other settings
-Validation_Size = 1000
+Validation_Size = 0
 
 #Read data from csv file
-train_file = "f.csv"
+train_file = "train.csv"
 test_file = "test.csv"
 train_data = pd.read_csv(train_file)
 
@@ -24,6 +25,7 @@ train_data = pd.read_csv(train_file)
 images = train_data.iloc[:,1:].values
 images = images.astype(np.float)
 
+#this to be commented when learning on sheered data
 images = np.multiply(images, 1.0/255.0)
 
 image_size = images.shape[1]
@@ -79,14 +81,19 @@ def max_pool_2x2(x):
 x = tf.placeholder('float', shape=[None, image_size])
 # labels
 y_ = tf.placeholder('float', shape=[None, unique_labels])
+# Standard Deviation for Gaussian Noise
+#std = tf.placeholder('float');
 
 # first convolutional layer (will try with [4,4,1,32])
 W_conv1 = weight_variable([5, 5, 1, 32])
 b_conv1 = bias_variable([32])
 
+
 #recreating images (i.e. making a matrix reshape as a image is i.e. 28x28 )
 image = tf.reshape(x, [-1,image_width , image_height,1])
 
+n = tf.random_normal(shape=tf.shape(image), mean=0.0, stddev=0.05, dtype=tf.float32)
+image = image + n;
 #convolution and max_pooling for 1st layer
 h_conv1 = tf.nn.relu(conv2d(image, W_conv1) + b_conv1)
 h_pool1 = max_pool_2x2(h_conv1)
@@ -181,11 +188,11 @@ saver = tf.train.Saver()
 
 #saver = tf.train.import_meta_graph("save.ckpt"+'.meta');
 #saver.restore(sess, "save.ckpt")
-motive=input('Is this a training session ?')
+motive=input('Is this a training session ? ')
 if motive=='yes' or motive=='YES':
-    load=input('Load previous model ?');
+    load=input('Load previous model ? ');
     if load=='yes' or load=='YES':
-        Model=input("Name of the model");
+        Model=input("Name of the model : ");
         try:
             saver = tf.train.import_meta_graph(Model+'.meta');
             saver.restore(sess, Model)
@@ -193,7 +200,7 @@ if motive=='yes' or motive=='YES':
             print('Error : File Does not exist!!')
     else:
         sess.run(init)
-        Model=input("Name of new model to save :");
+        Model=input("Name of new model to save : ");
 
     # visualisation variables
     train_accuracies = []
@@ -232,27 +239,35 @@ if motive=='yes' or motive=='YES':
     if(Validation_Size):
         validation_accuracy = accuracy.eval(feed_dict={x: validation_images, y_: validation_labels, keep_prob: 1.0})
         print('validation_accuracy => %.4f'%validation_accuracy)
-        
-        
+        plt.plot(x_range, validation_accuracies,'-g', label='Validation')
+    
+    if load=='Yes' or load=='yes':
+        save_same=input("Would you like to save this ? ");
+        if(save_same=='no'):
+            temp=input("Enter Another File Name : ");
+            saver.save(sess,temp);
+        else:
+            saver.save(sess,Model);
+    else:
+        saver.save(sess, Model);
+      
+    '''  
     line1=plt.plot(train_accuracies,label='Training Value')
     line2=plt.plot(validation_accuracies,label='Validation Value')
     plt.legend(loc=4)
     plt.ylabel('Accuracies->');
     plt.xlabel('Iterations(x100)->');
     plt.show()
+    '''
+    plt.plot(x_range, train_accuracies,'-b', label='Training')
+    plt.legend(loc='lower right', frameon=False)
+    plt.ylim(ymax = 1.1, ymin = 0.7)
+    plt.ylabel('Accuracy->')
+    plt.xlabel('Step->')
+    plt.show()
     
-    
-    if load=='Yes' or load=='yes':
-        save_same=input("Would you like to save this ?");
-        if(save_same=='no'):
-            temp=input("Enter Another File Name :");
-            saver.save(sess,temp);
-        else:
-            saver.save(sess,Model);
-    else:
-        saver.save(sess, Model);
 else:
-    Model=input("Name of the model");
+    Model=input("Name of the model : ");
     try:
         saver = tf.train.import_meta_graph(Model+'.meta');
         saver.restore(sess, Model)
