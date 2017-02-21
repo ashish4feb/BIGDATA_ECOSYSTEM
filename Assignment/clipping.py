@@ -6,24 +6,16 @@ from PIL import Image
 
 #Read data from csv file
 train_file = "train.csv"
-test_file = "test.csv"
 train_data = pd.read_csv(train_file)
 
 images = train_data.iloc[:,1:].values
 images = images.astype(np.float)
 
 labels_unroll = train_data[[0]].values.ravel()
-print(labels_unroll[2])
-
-#images = np.multiply(images, 1.0/255.0)
 
 image_size = images.shape[1]
 
 image_width = image_height = np.ceil(np.sqrt(image_size)).astype(np.uint8)
-
-print(image_width,image_height)
-
-one_image = images[0].reshape(image_width,image_height)
 
 print(one_image.shape)
 for x in range(0,32001, 2000):
