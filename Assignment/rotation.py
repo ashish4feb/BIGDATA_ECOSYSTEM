@@ -29,6 +29,6 @@ for x in range(0,34000, 2000):
             tmp = np.array(rotated)
             a = np.array(tmp.flatten())
             b = (np.insert(a,0,lab)).reshape(1,785)
-            nTrain = np.append(nTrain,b,axis=0)
-       print(i)
+            nTrain = np.append(nTrain,b,axis=0)   
+    print(x)
     np.savetxt("foo%s.csv" % x, nTrain, delimiter=",");
