@@ -1,3 +1,14 @@
 *****MNIST DIGIT RECOGNIZER*****
 
 This directory contains code and model for MNIST handwritten digit recognizer.
+
+ReadDigit.py : Python script for training the model
+//This model is developed on tensorflow
+
+model.ckpt/model.ckpt.meta : final model for error rate less than 1%(0.6% to be precise)
+
+clipping.py : converts a single image to 4 different clipped images of same size as the orriginal image.
+
+rotation.py : converts a single image to 2 different images at positive and negative angles.
+
+shearing.py : convertes a single image to 2 different sheared images.
