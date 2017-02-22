@@ -17,7 +17,6 @@ image_size = images.shape[1]
 
 image_width = image_height = np.ceil(np.sqrt(image_size)).astype(np.uint8)
 
-print(one_image.shape)
 for x in range(0,32001, 2000):
     nTrain1 = np.empty((1,785))
     for i in range(x,x+2000):
@@ -31,6 +30,6 @@ for x in range(0,32001, 2000):
                 #print(lab)
                 b = (np.insert(a,0,lab)).reshape(1,785)
                 nTrain1 = np.append(nTrain1,b,axis=0)
-        print(i)
+    print(x)
     np.savetxt("foo%s.csv" % x, nTrain1, delimiter=",");
 
