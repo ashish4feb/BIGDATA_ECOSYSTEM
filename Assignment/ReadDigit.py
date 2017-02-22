@@ -192,7 +192,7 @@ motive=input('Is this a training session ? ')
 if motive=='yes' or motive=='YES':
     load=input('Load previous model ? ');
     if load=='yes' or load=='YES':
-        Model=input("Name of the model : ");
+        Model=input("Name of the model to load : ");
         try:
             saver = tf.train.import_meta_graph(Model+'.meta');
             saver.restore(sess, Model)
@@ -251,14 +251,6 @@ if motive=='yes' or motive=='YES':
     else:
         saver.save(sess, Model);
       
-    '''  
-    line1=plt.plot(train_accuracies,label='Training Value')
-    line2=plt.plot(validation_accuracies,label='Validation Value')
-    plt.legend(loc=4)
-    plt.ylabel('Accuracies->');
-    plt.xlabel('Iterations(x100)->');
-    plt.show()
-    '''
     plt.plot(x_range, train_accuracies,'-b', label='Training')
     plt.legend(loc='lower right', frameon=False)
     plt.ylim(ymax = 1.1, ymin = 0.7)
@@ -267,7 +259,7 @@ if motive=='yes' or motive=='YES':
     plt.show()
     
 else:
-    Model=input("Name of the model : ");
+    Model=input("Name of the model to test on : ");
     try:
         saver = tf.train.import_meta_graph(Model+'.meta');
         saver.restore(sess, Model)
