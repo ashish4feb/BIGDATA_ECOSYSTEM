@@ -26,9 +26,10 @@ def forward_backward_prop(data, labels, params, dimensions):
     b2 = np.reshape(params[ofs:ofs + Dy], (1, Dy))
 
     ### YOUR CODE HERE: forward propagation
-    raise NotImplementedError
+    L1 = sigmoid(np.matmul(data,W1) + b1)
+    L2 = sigmoid(np.matmul(L1,W2) + b2)
     ### END YOUR CODE
-    
+
     ### YOUR CODE HERE: backward propagation
     raise NotImplementedError
     ### END YOUR CODE
@@ -73,4 +74,4 @@ def your_sanity_checks():
 
 if __name__ == "__main__":
     sanity_check()
-    your_sanity_checks()
+    #your_sanity_checks()
