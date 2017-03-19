@@ -8,7 +8,6 @@ def sigmoid(x):
     ### YOUR CODE HERE
     sig = 1/(1+np.exp(-x))
     return sig
-    raise NotImplementedError
     ### END YOUR CODE
     
     return x
