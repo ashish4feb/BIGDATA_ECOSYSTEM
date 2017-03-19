@@ -10,7 +10,8 @@ def normalizeRows(x):
     # Implement a function that normalizes each row of a matrix to have unit length
     
     ### YOUR CODE HERE
-    raise NotImplementedError
+    N = x.shape[0]
+    x /= np.sqrt(np.sum(x**2, axis=1)).reshape((N,1)) 
     ### END YOUR CODE
     
     return x
@@ -50,7 +51,16 @@ def softmaxCostAndGradient(predicted, target, outputVectors, dataset):
     # assignment!                                                  
     
     ### YOUR CODE HERE
-    raise NotImplementedError
+    prob = softmax(np.matmul((outputVectors),predicted)).flatten()
+    cost = -np.log(prob[target])
+    
+    delta = prob
+    delta[target] = delta[target] - 1
+    
+    grad = np.matmul(delta.reshape((delta.shape[0],1)),predicted.reshape((1,predicted.shape[0])))
+    gradPred = (delta.reshape((1,delta.shape[0])).dot(outputVectors)).flatten()
+    
+    #raise NotImplementedError
     ### END YOUR CODE
     
     return cost, gradPred, grad
@@ -73,7 +83,55 @@ def negSamplingCostAndGradient(predicted, target, outputVectors, dataset,
     # assignment!
     
     ### YOUR CODE HERE
-    raise NotImplementedError
+    
+    grad = np.zeros(outputVectors.shape)
+    gradPred = np.zeros(predicted.shape)
+    
+    indices = [target]
+    for k in range(K):
+        newidx = dataset.sampleTokenIdx()
+        while newidx == target:
+            newidx = dataset.sampleTokenIdx()
+        indices += [newidx]
+
+    labels = np.array([1] + [-1 for k in range(K)])
+    vecs = outputVectors[indices,:]
+
+    t = sigmoid(vecs.dot(predicted) * labels)
+    cost = -np.sum(np.log(t))
+
+    delta = labels * (t - 1)
+    gradPred = delta.reshape((1,K+1)).dot(vecs).flatten()
+    gradtemp = delta.reshape((K+1,1)).dot(predicted.reshape(
+        (1,predicted.shape[0])))
+    for k in range(K+1):
+        grad[indices[k]] += gradtemp[k,:]
+    
+    '''
+    indices = []
+    for k in range(K):
+        newidx = dataset.sampleTokenIdx()
+        while newidx == target:
+            newidx = dataset.sampleTokenIdx()
+        indices.append(newidx)
+        
+    labels = np.array([-1 for k in range(K)])
+    vecs = outputVectors[indices,:]
+    
+    sig_W_i = sigmoid(outputVectors[target]*predicted)
+    W_i = -np.log(sig_W_i)
+    
+    W_rest = -np.sum(np.log(sigmoid(vecs.dot(predicted) * labels)))
+    
+    cost = W_i + W_rest
+    
+    all_vecs = []
+    
+    grad = -(1 / sig_W_i ) - 
+    
+    delta = labels * (p - 1)
+    gradPred = delta.reshape((1,K+1)).dot(vecs).flatten()
+    '''
     ### END YOUR CODE
     
     return cost, gradPred, grad
@@ -106,7 +164,18 @@ def skipgram(currentWord, C, contextWords, tokens, inputVectors, outputVectors,
     # assignment!
 
     ### YOUR CODE HERE
-    raise NotImplementedError
+    currentI = tokens[currentWord]
+    predicted = inputVectors[currentI, :]
+
+    cost = 0.0
+    gradIn = np.zeros(inputVectors.shape)
+    gradOut = np.zeros(outputVectors.shape)
+    for cwd in contextWords:
+        idx = tokens[cwd]
+        cc, gp, gg = word2vecCostAndGradient(predicted, idx, outputVectors, dataset)
+        cost += cc
+        gradOut += gg
+        gradIn[currentI, :] += gp
     ### END YOUR CODE
     
     return cost, gradIn, gradOut
@@ -131,7 +200,18 @@ def cbow(currentWord, C, contextWords, tokens, inputVectors, outputVectors,
     gradOut = np.zeros(outputVectors.shape)
 
     ### YOUR CODE HERE
-    raise NotImplementedError
+    D = inputVectors.shape[1]
+    predicted = np.zeros((D,))
+
+    indices = [tokens[cwd] for cwd in contextWords]
+    for idx in indices:
+        predicted += inputVectors[idx, :]
+
+    cost, gp, gradOut = word2vecCostAndGradient(predicted, tokens[currentWord], outputVectors, dataset)
+    gradIn = np.zeros(inputVectors.shape)
+    for idx in indices:
+        gradIn[idx, :] += gp
+
     ### END YOUR CODE
     
     return cost, gradIn, gradOut
