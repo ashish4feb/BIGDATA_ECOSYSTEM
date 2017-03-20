@@ -10,8 +10,11 @@ def normalizeRows(x):
     # Implement a function that normalizes each row of a matrix to have unit length
     
     ### YOUR CODE HERE
+    
+    x_sqr = np.sum(x**2, axis=1)
     N = x.shape[0]
-    x /= np.sqrt(np.sum(x**2, axis=1)).reshape((N,1)) 
+    x /= np.sqrt(x_sqr).reshape((N,1)) 
+    
     ### END YOUR CODE
     
     return x
@@ -87,51 +90,33 @@ def negSamplingCostAndGradient(predicted, target, outputVectors, dataset,
     grad = np.zeros(outputVectors.shape)
     gradPred = np.zeros(predicted.shape)
     
-    indices = [target]
+    indxs = [target]
+    labels = np.array([1])
     for k in range(K):
         newidx = dataset.sampleTokenIdx()
         while newidx == target:
             newidx = dataset.sampleTokenIdx()
-        indices += [newidx]
+        indxs += [newidx]
+        labels = np.append(labels,[-1])
 
-    labels = np.array([1] + [-1 for k in range(K)])
-    vecs = outputVectors[indices,:]
+    #print labels
 
-    t = sigmoid(vecs.dot(predicted) * labels)
-    cost = -np.sum(np.log(t))
+    vs = outputVectors[indxs,:]
+    #print vecs.shape
 
-    delta = labels * (t - 1)
-    gradPred = delta.reshape((1,K+1)).dot(vecs).flatten()
+    p = sigmoid(vs.dot(predicted) * labels)
+    
+    #Cost Function
+    cost = -np.sum(np.log(p))
+
+    delta = labels * (p - 1)
+    gradPred = delta.reshape((1,K+1)).dot(vs).flatten()
     gradtemp = delta.reshape((K+1,1)).dot(predicted.reshape(
         (1,predicted.shape[0])))
     for k in range(K+1):
-        grad[indices[k]] += gradtemp[k,:]
+        grad[indxs[k]] += gradtemp[k,:]
     
-    '''
-    indices = []
-    for k in range(K):
-        newidx = dataset.sampleTokenIdx()
-        while newidx == target:
-            newidx = dataset.sampleTokenIdx()
-        indices.append(newidx)
-        
-    labels = np.array([-1 for k in range(K)])
-    vecs = outputVectors[indices,:]
     
-    sig_W_i = sigmoid(outputVectors[target]*predicted)
-    W_i = -np.log(sig_W_i)
-    
-    W_rest = -np.sum(np.log(sigmoid(vecs.dot(predicted) * labels)))
-    
-    cost = W_i + W_rest
-    
-    all_vecs = []
-    
-    grad = -(1 / sig_W_i ) - 
-    
-    delta = labels * (p - 1)
-    gradPred = delta.reshape((1,K+1)).dot(vecs).flatten()
-    '''
     ### END YOUR CODE
     
     return cost, gradPred, grad
@@ -164,18 +149,20 @@ def skipgram(currentWord, C, contextWords, tokens, inputVectors, outputVectors,
     # assignment!
 
     ### YOUR CODE HERE
-    currentI = tokens[currentWord]
-    predicted = inputVectors[currentI, :]
+    currInd = tokens[currentWord]
+    predicted = inputVectors[currInd, :]
 
     cost = 0.0
+    
     gradIn = np.zeros(inputVectors.shape)
     gradOut = np.zeros(outputVectors.shape)
-    for cwd in contextWords:
-        idx = tokens[cwd]
-        cc, gp, gg = word2vecCostAndGradient(predicted, idx, outputVectors, dataset)
-        cost += cc
-        gradOut += gg
-        gradIn[currentI, :] += gp
+    
+    for cw in contextWords:
+        target = tokens[cw]
+        co, grap, gr = word2vecCostAndGradient(predicted, target, outputVectors, dataset)
+        cost += co
+        gradOut += gr
+        gradIn[currInd, :] += grap
     ### END YOUR CODE
     
     return cost, gradIn, gradOut
@@ -200,17 +187,19 @@ def cbow(currentWord, C, contextWords, tokens, inputVectors, outputVectors,
     gradOut = np.zeros(outputVectors.shape)
 
     ### YOUR CODE HERE
-    D = inputVectors.shape[1]
-    predicted = np.zeros((D,))
 
-    indices = [tokens[cwd] for cwd in contextWords]
+    predicted = np.zeros((inputVectors.shape[1],))
+
+    indices = [tokens[cw] for cw in contextWords]
     for idx in indices:
         predicted += inputVectors[idx, :]
+        
+    target = tokens[currentWord]
 
-    cost, gp, gradOut = word2vecCostAndGradient(predicted, tokens[currentWord], outputVectors, dataset)
-    gradIn = np.zeros(inputVectors.shape)
+    cost, grap, gradOut = word2vecCostAndGradient(predicted, target, outputVectors, dataset)
+
     for idx in indices:
-        gradIn[idx, :] += gp
+        gradIn[idx, :] += grap
 
     ### END YOUR CODE
     

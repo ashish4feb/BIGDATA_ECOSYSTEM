@@ -8,9 +8,13 @@ from q4_softmaxreg import softmaxRegression, getSentenceFeature, accuracy, softm
 
 # Try different regularizations and pick the best!
 # NOTE: fill in one more "your code here" below before running!
-REGULARIZATION = None   # Assign a list of floats in the block below
+REGULARIZATION = None #8.161401E-05   # Assign a list of floats in the block below
 ### YOUR CODE HERE
-raise NotImplementedError
+
+REGULARIZATION = np.logspace(-6,-0.5,num=18)
+
+REGULARIZATION = np.concatenate(([0],REGULARIZATION),axis=0)
+
 ### END YOUR CODE
 
 # Load the dataset
@@ -47,11 +51,11 @@ for regularization in REGULARIZATION:
     random.seed(3141)
     np.random.seed(59265)
     weights = np.random.randn(dimVectors, 5)
-    print "Training for reg=%f" % regularization 
+    print "Training for reg=%f" % regularization
 
     # We will do batch optimization
     weights = sgd(lambda weights: softmax_wrapper(trainFeatures, trainLabels, 
-        weights, regularization), weights, 3.0, 10000, PRINT_EVERY=100)
+        weights, regularization), weights, 3.0, 5000, PRINT_EVERY=100)
 
     # Test on train set
     _, _, pred = softmaxRegression(trainFeatures, trainLabels, weights)
@@ -86,7 +90,13 @@ BEST_REGULARIZATION = None
 BEST_WEIGHTS = None
 
 ### YOUR CODE HERE 
-raise NotImplementedError
+
+sorted_results = sorted(results, key=lambda item: item['dev'],reverse=True)
+
+BEST_REGULARIZATION = sorted_results[0]['reg']
+
+BEST_WEIGHTS = sorted_results[0]['weights']
+
 ### END YOUR CODE
 
 # Test your findings on the test set
